@@ -1,19 +1,43 @@
 import re
 import numpy as np
 
-class Aligments():
+from visualize_align import wrap_text
+
+class GlobalAligment():
 
     """Perform a global amino acid sequence aligment 
        based on needleman-wunsch algorithm.
     """
     
-    def __init__(self, seq1, seq2, gap=-1):
+    def __init__(self, query, subject, gap=-1):
 
-        self.seq1 = seq1
-        self.seq2 = seq2
-        self.m = len(seq1)
-        self.n = len(seq2)
+        self.query = query
+        self.subject = subject
+        self.seq1 = ""
+        self.seq2 = ""
+        self.m = 0
+        self.n = 0
         self.gap = gap
+
+    def read_fastas(self):
+        """Read fasta files and return their sequences."""
+
+        fastas = [self.query, self.subject]
+
+        sequences = []
+        for fasta in fastas:
+            with open(fasta) as obj:
+                seqs = obj.readlines()
+                seq = "".join(seqs[1:]).replace('\n', '')
+                sequences.append(seq)
+        
+        self.seq1 = sequences[0]
+        self.seq2 = sequences[1]
+        self.m = len(sequences[0])
+        self.n = len(sequences[1])
+
+        return sequences
+
 
     def score_system(*aminiacid, file='blosum62.txt'):
 
@@ -47,6 +71,9 @@ class Aligments():
         """Return two matrizes: the first one is a dynamic programming matriz
            and the second one is the backtracking pointers information.
         """
+        seq1 = self.read_fastas()[0]
+        seq2 = self.read_fastas()[1]
+
         # Initializing dynamic programming matriz.
         matrix = np.zeros((self.m + 1, self.n + 1))
         traceback = []
@@ -73,7 +100,7 @@ class Aligments():
         for i in range(1, self.m + 1):
             for j in range(1, self.n + 1):
                 # getting amino acid substitution score form blosum62 matriz.
-                score = self.score_system(self.seq1[i-1], self.seq2[j-1])
+                score = self.score_system(seq1[i-1], seq2[j-1])
                 # filling dynamic programming matriz.
                 sij = [matrix[i,j-1]+self.gap, matrix[i-1,j]+self.gap, matrix[i-1,j-1] + score]
                 matrix[i,j] = max(sij)
@@ -199,9 +226,14 @@ class Aligments():
         identity = 100 * (matchs / lenght)
 
         # Showing aligment.
-        print(seq1)
-        print(caracters)
-        print(seq2)
+        algn1 = wrap_text(seq1)
+        char = wrap_text(caracters)
+        alig2 = wrap_text(seq2)
+
+        for i,j,k in zip(algn1,char,alig2):
+            print(f"seq1 {i}")
+            print(f"     {j}")
+            print(f"seq2 {k}\n")
 
         # Showing aligment metrics.
         print(f"\nNeedleman-Wunsh aligment score: {alig_score}")
@@ -209,17 +241,17 @@ class Aligments():
     
     def run(self):
         """Show results."""
-        print(f"\n{self.n*'----'}Dinamic programming table.{self.n*'----'}")
+        print(f"\n{20*'---'}Dinamic programming table.{20*'---'}")
         self.show_matriz()
-        print(2*self.n*'-----')
+        print(20*'----')
 
         print("Sequence Aligment")
         self.show_aligment()
 
 
     
-w = "DRQTAQAAGTTTIT"
-v = "DRNTAQLLGTDTT"
+w = "seq1.fasta"
+v = "seq2.fasta"
 
-alig = Aligments(w, v)
+alig = GlobalAligment(w, v)
 alig.run()
