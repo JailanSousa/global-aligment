@@ -1,4 +1,5 @@
 import re
+import sys
 import numpy as np
 
 from visualize_align import wrap_text
@@ -9,7 +10,7 @@ class GlobalAligment():
        based on needleman-wunsch algorithm.
     """
     
-    def __init__(self, query, subject, gap=-1):
+    def __init__(self, query=None, subject=None, gap=-1, pg_table=False):
 
         self.query = query
         self.subject = subject
@@ -18,6 +19,7 @@ class GlobalAligment():
         self.m = 0
         self.n = 0
         self.gap = gap
+        self.pg_table = pg_table
 
     def read_fastas(self):
         """Read fasta files and return their sequences."""
@@ -240,18 +242,42 @@ class GlobalAligment():
         print(f"Indentity: {identity:.1f}%")
     
     def run(self):
-        """Show results."""
-        print(f"\n{20*'---'}Dinamic programming table.{20*'---'}")
-        self.show_matriz()
-        print(20*'----')
 
-        print("Sequence Aligment")
-        self.show_aligment()
+        argument = ''
+        try:
+            for i, arg in enumerate(sys.argv):
+                if i % 2 == 1:
+                    argument = arg
+                    if argument == '-h' or argument == '--help':
+                        print("""HELP:
+                              -q --query input the first sequence in fasta format file.
+                              -s --subject input the second one in fasta format file.
+                              -g --gap gap penalty (default -1)
+                              -m --pg_table print the dynamic programming table (defalt False)
+                              """)
+                        break
+                elif i % 2 == 0 and i != 0:
+                    value = arg
+                    if argument == '-q' or argument == '--query':
+                        self.query = value
+                    elif argument == '-s' or argument == '--subject':
+                        self.subject = value
+                    elif argument == '-g' or argument == '--gap':
+                        self.gap = int(value)
+                    elif argument == '-m' or argument == '--pg_table':
+                        self.pg_table = value
+        except: 
+            print('Look the instructions')
+        
+        if argument != '-h' and argument != '--help':
+            print("Sequence Aligment")
+            self.show_aligment()
+        if self.pg_table:
+            """Show results."""
+            print(f"\n{20*'---'}Dinamic programming table.{20*'---'}")
+            self.show_matriz()
+            print(20*'----')
 
 
-    
-w = "seq1.fasta"
-v = "seq2.fasta"
-
-alig = GlobalAligment(w, v)
+alig = GlobalAligment()
 alig.run()
